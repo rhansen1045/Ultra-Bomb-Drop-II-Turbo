@@ -1,3 +1,6 @@
+#ifndef PLAYER_H
+#define PLAYER_H
+
 class Player {
   
     int cur_x;
@@ -17,6 +20,10 @@ public:
     int getX();
     int getY();
     
-    virtual void update();
+    virtual void update() {
+        
+    }
     
 };
+
+#endif

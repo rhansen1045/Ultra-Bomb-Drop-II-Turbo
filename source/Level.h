@@ -1,5 +1,16 @@
-#define LEVEL_COL 20
-#define LEVEL_ROW 20 
+#ifndef LEVEL_H
+#define LEVEL_H
+
+#include "LocalPlayer.h"
+
+#include <vector>
+
+using namespace std;
+
+#define LEVEL_COL 11
+#define LEVEL_ROW 11
+
+#define DESTROY_BLOCKS 20
 
 typedef enum {
     GROUND,
@@ -11,7 +22,6 @@ class Level {
   
     Tile board_data[LEVEL_ROW][LEVEL_COL];
     
-    void generate(); //Generates a random level
     
     LocalPlayer* local;
     vector<Player*> players;
@@ -22,5 +32,11 @@ public:
     void add_player(Player* player);
     void set_local(LocalPlayer* player);
     
+    void generate(); //Generates a random level
+    
+    Tile get_tile(int x, int y);
+    
     void update();
 };
+
+#endif
