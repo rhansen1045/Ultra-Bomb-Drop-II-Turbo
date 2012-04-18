@@ -1,0 +1,7 @@
+On a Linux or Mac, to build the executable, run "make" in the root directory.
+
+For a Windows machine, using the Windows project file to build.
+
+media/ - All media and images associated with the project
+source/ - source code for the project
+tests/ - unit tests for the project
