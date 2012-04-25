@@ -1,23 +1,72 @@
-#include <SDL/SDL.h>
-#include <SDL_image/SDL_image.h>
+#include "SDL.h"
+#include "SDL_image.h"
 
 #include <stdio.h>
 #include <string>
+#include "Timer.h"
 
 
 #include "Level.h"
 
 using namespace std;
+//The frames per second
+const int FRAMES_PER_SECOND = 10;
+
+//The direction status of the bomberman figure
+const int FOO_RIGHT = 0;
+const int FOO_LEFT = 1;
+const int FOO_UP = 3;
+const int FOO_DOWN =4;
+
+#define COLORKEY 255, 0, 255
 
 //The surfaces
+SDL_Surface *foo = NULL;
 SDL_Surface *dots = NULL;
 SDL_Surface *screen = NULL;
+int alpha = SDL_ALPHA_OPAQUE;
+//The dimenstions of the bomberman figure
+const int FOO_WIDTH = 48;
+const int FOO_HEIGHT = 58;
 
 //The event structure
 SDL_Event event;
 
+ Level* lvl = new Level();
 //The portions of the sprite map to be blitted
 SDL_Rect clip[ 4 ];
+
+//The areas of the sprite sheet
+SDL_Rect clipsRight[ 4 ];
+SDL_Rect clipsLeft[ 4 ];
+SDL_Rect clipsUp [4];
+SDL_Rect clipsDown [4];
+
+inline SDL_Surface *ImgLoader(char *file,bool bCKey, int r , int g , int b , int alpha)
+{
+    SDL_Surface *pic;
+    pic = IMG_Load(file); // From SDL_image.h , load the image to pic
+    // Log error message into stderr.txt if happened
+    if(pic==NULL) fprintf(stderr,"Missing image %s : %s\n",file,IMG_GetError());
+    if( bCKey ) {
+        // Sets the color key (transparent pixel) in a blittable surface and RLE acceleration.
+       SDL_SetColorKey(pic,SDL_SRCCOLORKEY|SDL_RLEACCEL,SDL_MapRGB(pic->format,r,g,b));
+         }
+    if(alpha) SDL_SetAlpha(pic, SDL_SRCALPHA|SDL_RLEACCEL , 255 - alpha);
+    // This function takes a surface and copies it to a new surface of the 
+    // pixel format and colors of the video framebuffer, suitable for fast 
+    // blitting onto the display surface.
+    pic = SDL_DisplayFormat(pic);
+    return (pic);
+}
+
+inline SDL_Surface *ImgLoader(char *file)       
+                { return ImgLoader(file,1,0,0,0,0) ; }
+inline SDL_Surface *ImgLoader(char *file,bool bCKey)
+                { return ImgLoader(file,1,255,255,255,0) ; }
+
+
+
 
 SDL_Surface *load_image( std::string filename )
 {
@@ -40,12 +89,19 @@ SDL_Surface *load_image( std::string filename )
         SDL_FreeSurface( loadedImage );
         
         //If the surface was optimized
-        if( optimizedImage != NULL )
-        {
+       // if( optimizedImage != NULL )
+       // {
             //Color key surface
-            SDL_SetColorKey( optimizedImage, SDL_SRCCOLORKEY, SDL_MapRGB( optimizedImage->format, 0, 0xFF, 0xFF ) );
-        }
-    }
+			 //Map the color key
+         //   Uint32 colorkey = SDL_MapRGB( optimizedImage->format, 0, 0xFF, 0xFF );
+          //  SDL_SetColorKey( optimizedImage, SDL_SRCCOLORKEY, colorkey );
+        
+   		 //Set all pixels of color R 0, G 0xFF, B 0xFF to be transparent
+            
+		//}
+	
+	
+	}
     
     //Return the optimized surface
     return optimizedImage;
@@ -73,10 +129,18 @@ const int SCREEN_BPP = 32;
 bool load_files()
 {
     //Load the sprite map
-    dots = load_image( "media/tiles1.png" );
-    
+    dots = load_image( "tiles1.gif" );
+	 
+      
     //If there was an problem loading the sprite map
     if( dots == NULL )
+    {
+        return false;
+    }
+	//foo = ImgLoader( "costume2.gif" ,1,255,255,255,0);
+	//foo = ImgLoader( "costume2.gif" ,1);
+	foo=load_image("costume3.gif");
+	if( foo == NULL )
     {
         return false;
     }
@@ -86,16 +150,336 @@ bool load_files()
 }
 
 bool quit = false;
+void set_clips()
+{
+    //Clip the sprites
+    clipsRight[ 0 ].x = 0;
+    clipsRight[ 0 ].y = 179;
+    clipsRight[ 0 ].w = FOO_WIDTH;
+    clipsRight[ 0 ].h = FOO_HEIGHT;
+
+    clipsRight[ 1 ].x = FOO_WIDTH;
+    clipsRight[ 1 ].y = 179;
+    clipsRight[ 1 ].w = FOO_WIDTH;
+    clipsRight[ 1 ].h = FOO_HEIGHT;
+
+    clipsRight[ 2 ].x = FOO_WIDTH * 2;
+    clipsRight[ 2 ].y = 179;
+    clipsRight[ 2 ].w = FOO_WIDTH;
+    clipsRight[ 2 ].h = FOO_HEIGHT;
+
+    clipsRight[ 3 ].x = FOO_WIDTH * 3;
+    clipsRight[ 3 ].y = 179;
+    clipsRight[ 3 ].w = FOO_WIDTH;
+    clipsRight[ 3 ].h = FOO_HEIGHT;
+
+    clipsLeft[ 0 ].x = 0;
+    clipsLeft[ 0 ].y = FOO_HEIGHT;
+    clipsLeft[ 0 ].w = FOO_WIDTH;
+    clipsLeft[ 0 ].h = FOO_HEIGHT;
+
+    clipsLeft[ 1 ].x = FOO_WIDTH;
+    clipsLeft[ 1 ].y = FOO_HEIGHT;
+    clipsLeft[ 1 ].w = FOO_WIDTH;
+    clipsLeft[ 1 ].h = FOO_HEIGHT;
+
+    clipsLeft[ 2 ].x = FOO_WIDTH * 2;
+    clipsLeft[ 2 ].y = FOO_HEIGHT;
+    clipsLeft[ 2 ].w = FOO_WIDTH;
+    clipsLeft[ 2 ].h = FOO_HEIGHT;
+
+    clipsLeft[ 3 ].x = FOO_WIDTH * 3;
+    clipsLeft[ 3 ].y = FOO_HEIGHT;
+    clipsLeft[ 3 ].w = FOO_WIDTH;
+    clipsLeft[ 3 ].h = FOO_HEIGHT;
+
+	clipsUp[0].x=0;
+	clipsUp[0].y=123;
+	clipsUp[ 0 ].w = FOO_WIDTH;
+    clipsUp[ 0 ].h = FOO_HEIGHT;
+
+	clipsUp[ 1 ].x = FOO_WIDTH;
+    clipsUp[ 1 ].y = 123;
+    clipsUp[ 1 ].w = FOO_WIDTH;
+    clipsUp[ 1 ].h = FOO_HEIGHT;
+
+    clipsUp[ 2 ].x = FOO_WIDTH * 2;
+    clipsUp[ 2 ].y = 123;
+    clipsUp[ 2 ].w = FOO_WIDTH;
+    clipsUp[ 2 ].h = FOO_HEIGHT;
+
+    clipsUp[ 3 ].x = FOO_WIDTH * 3;
+    clipsUp[ 3 ].y = 123;
+    clipsUp[ 3 ].w = FOO_WIDTH;
+    clipsUp[ 3 ].h = FOO_HEIGHT;
+
+	clipsDown[0].x=0;
+	clipsDown[0].y=0;
+	clipsDown[ 0 ].w = FOO_WIDTH;
+    clipsDown[ 0 ].h = FOO_HEIGHT;
+
+	clipsDown[ 1 ].x = FOO_WIDTH;
+    clipsDown[ 1 ].y = 0;
+    clipsDown[ 1 ].w = FOO_WIDTH;
+    clipsDown[ 1 ].h = FOO_HEIGHT;
+
+    clipsDown[ 2 ].x = FOO_WIDTH * 2;
+    clipsDown[ 2 ].y = 0;
+    clipsDown[ 2 ].w = FOO_WIDTH;
+    clipsDown[ 2 ].h = FOO_HEIGHT;
+
+    clipsDown[ 3 ].x = FOO_WIDTH * 3;
+    clipsDown[ 3 ].y = 0;
+    clipsDown[ 3 ].w = FOO_WIDTH;
+    clipsDown[ 3 ].h = FOO_HEIGHT;
+
+
+
+
+}
 void clean_up()
 {
     //Free the sprite map
     SDL_FreeSurface( dots );
-    
+    SDL_FreeSurface( foo );
+
     //Quit SDL
     SDL_Quit();
 }
+class Foo
+{
+    private:
+    //The offset
+    int offSet;
+	int yoffset;
+    //Its rate of movement
+    int velocity;
+	int yvelocity;
+    //Its current frame
+    int frame;
+
+    //Its animation status
+    int status;
+
+    public:
+    //Initializes the variables
+    Foo();
+
+    //Handles input
+    void handle_events();
+
+    //Moves the stick figure
+    int move();
+
+    //Shows the stick figure
+    void show();
+};
+
+
+
+Foo::Foo()
+{
+    //Initialize movement variables
+    offSet = 0;
+    velocity = 0;
+	bool flag=false;
+	for(int i = 1; i < LEVEL_ROW-1; ++i) {
+        for(int j = 1; j < LEVEL_COL-1; ++j) {
+            Tile tile = lvl->get_tile(j, i);
+            if(tile == GROUND&&(lvl->get_tile(j+1,i)==GROUND||lvl->get_tile(j-1,i)==GROUND||lvl->get_tile(j,i+1)==GROUND||lvl->get_tile(j,i-1)==GROUND)) {
+                
+				offSet=i*64;
+				yoffset=j*64;
+              flag=true;
+				break;
+            } 
+        }
+        if(flag)
+			break;
+		printf("\n");
+    }
+
+	//yoffset=SCREEN_HEIGHT-FOO_HEIGHT;
+	yvelocity=0;
+    //Initialize animation variables
+    frame = 0;
+    status = FOO_RIGHT;
+}
+
+void Foo::handle_events()
+{
+    //If a key was pressed
+    if( event.type == SDL_KEYDOWN )
+    {
+        //Set the velocity
+        switch( event.key.keysym.sym )
+        {
+            case SDLK_RIGHT: velocity += FOO_WIDTH / 4;status=FOO_RIGHT; break;
+            case SDLK_LEFT: velocity -= FOO_WIDTH /4; status=FOO_LEFT;break;
+			case SDLK_UP: yvelocity-=FOO_HEIGHT/4; status=FOO_UP;break;
+			case SDLK_DOWN: yvelocity +=FOO_HEIGHT/4; status=FOO_DOWN; break;
+        }
+    }
+    //If a key was released
+    else if( event.type == SDL_KEYUP )
+    {
+        //Set the velocity
+        switch( event.key.keysym.sym )
+        {
+            case SDLK_RIGHT: velocity -= FOO_WIDTH / 4; break;
+            case SDLK_LEFT: velocity += FOO_WIDTH / 4; break;
+			case SDLK_UP: yvelocity+=FOO_HEIGHT/4; break;
+			case SDLK_DOWN: yvelocity -=FOO_HEIGHT/4; break;
+        }
+    }
+}
+
+int Foo::move()
+{
+    //Move
+	if(status==FOO_DOWN)
+	printf("yoffset %d");
+    offSet += velocity;
+	yoffset += yvelocity;
+    //Keep the stick figure in bounds
+    if( ( offSet+2< 64 ) || ( offSet + FOO_WIDTH-2>(10*64)))
+    {
+       
+		offSet -= velocity;
+		return 1;
+	  }
+//	else
+	 if((yoffset+2<64)||(yoffset -2+ FOO_HEIGHT>10*64))
+	 {
+		 
+		 yoffset -= yvelocity;
+		return 1;
+	 }
+	// else
+		 if((lvl->get_tile(((yoffset+6)/64),((offSet+FOO_WIDTH-4)/64))!=GROUND)||(lvl->get_tile(((yoffset+6)/64),(offSet+6)/64)!=GROUND)||(lvl->get_tile(((yoffset+FOO_HEIGHT-4)/64),(offSet+FOO_WIDTH-4)/64)!=GROUND)||((lvl->get_tile(((yoffset+FOO_HEIGHT-4)/64),((offSet+6)/64))!=GROUND)))
+			 {
+				 
+			 offSet-=velocity;
+			 yoffset-=yvelocity;
+				 
+				
+		 }
+}
+		 /*
+	if(((lvl->get_tile(((yoffset)/64),(offSet+FOO_WIDTH)/64)!=GROUND||lvl->get_tile(((yoffset+FOO_HEIGHT-3)/64),((offSet+FOO_WIDTH)/64)!=GROUND))&&status==FOO_RIGHT))
+	{
+		if(velocity>0)
+		offSet -= velocity;
+		if(velocity<0)
+			offSet+=velocity;
+		
+	}
+	else 
+		if(((lvl->get_tile(((yoffset)/64),(offSet)/64)!=GROUND||lvl->get_tile(((yoffset+FOO_HEIGHT-4)/64),((offSet)/64)!=GROUND))&&status==FOO_LEFT))
+	{
+		if(velocity>0)
+		offSet += velocity;
+		if(velocity<0)
+			offSet-=velocity;
+		
+	}
+		else 
+			if(((lvl->get_tile(((yoffset+FOO_HEIGHT)/64),(offSet)/64)!=GROUND||lvl->get_tile(((yoffset+FOO_HEIGHT)/64),(offSet+FOO_WIDTH-3)/64)!=GROUND))&&status==FOO_DOWN)
+	{
+		if(yvelocity>0)
+		yoffset =yoffset- yvelocity;
+		if(yvelocity<0)
+			yoffset+=yvelocity;
+		
+	}
+			else 
+				if(((lvl->get_tile(((yoffset)/64),(offSet)/64)!=GROUND||lvl->get_tile(((yoffset)/64),(offSet+FOO_WIDTH-3)/64)!=GROUND))&&status==FOO_UP)
+	{
+		if(yvelocity>0)
+		yoffset += yvelocity;
+		if(yvelocity<0)
+			yoffset-=yvelocity;
+		
+	}
+
+
+
+}
+*/
+
+void Foo::show()
+{
+    //If Foo is moving left
+    if( velocity < 0 )
+    {
+        //Set the animation to left
+        status = FOO_LEFT;
+
+        //Move to the next frame in the animation
+        frame++;
+    }
+    //If Foo is moving right
+    else if( velocity > 0 )
+    {
+        //Set the animation to right
+        status = FOO_RIGHT;
+
+        //Move to the next frame in the animation
+        frame++;
+    }
+	//If Foo is moving up
+	else if(yvelocity<0)
+	{
+		 //Set the animation to up
+		status = FOO_UP;
+		//Move to the next frame in the animation
+		frame++;
+	}
+	//If Foo is moving down
+	else if (yvelocity>0)
+	{
+		//Set the animation to down
+		status=FOO_DOWN;
+		//Move to the next frame in the animation
+		frame++;
+
+	
+	}
+    //If Foo standing
+    else
+    {
+        //Restart the animation
+        frame = 0;
+    }
+
+    //Loop the animation
+    if( frame >= 4 )
+    {
+        frame = 0;
+    }
+
+    //Show the stick figure
+    if( status == FOO_RIGHT )
+    {
+        apply_surface( offSet, yoffset, foo, screen, &clipsRight[ frame ] );
+    }
+    else if( status == FOO_LEFT )
+    {
+        apply_surface( offSet, yoffset, foo, screen, &clipsLeft[ frame ] );
+    }
+	else if(status== FOO_UP)
+	{
+		 apply_surface( offSet, yoffset, foo, screen, &clipsUp[ frame ] );
+	}
+	else if (status == FOO_DOWN)
+	{
+		apply_surface( offSet, yoffset, foo, screen, &clipsDown[ frame ] );
+	}
+}
+
 
 int main( int argc, char* args[] ) {
+	
     //Initialize all SDL subsystems
     if( SDL_Init( SDL_INIT_EVERYTHING ) == -1 )
     {
@@ -115,6 +499,9 @@ int main( int argc, char* args[] ) {
     SDL_WM_SetCaption( "Split the dots", NULL );
     
     load_files();
+	 set_clips();
+	 Timer fps;
+	
     
     //Clip range for the top left
     clip[ 0 ].x = 0;
@@ -151,12 +538,34 @@ int main( int argc, char* args[] ) {
     apply_surface( 0, 380, dots, screen, &clip[ 2 ] );
     apply_surface( 540, 380, dots, screen, &clip[ 3 ] );
     */
-    Level* lvl = new Level();
+   
     
     lvl->generate();
     
+	 Foo walk;
     
-    for(int i = 0; i < LEVEL_ROW; ++i) {
+   
+    
+    //While the user hasn't quit
+    while( quit == false )
+	{
+		fps.start();
+        //While there's events to handle
+        while( SDL_PollEvent( &event ) )
+		{
+			walk.handle_events();
+            //If the user has Xed out the window
+            if( event.type == SDL_QUIT )
+            {
+                //Quit the program
+                quit = true;
+            }
+        }
+   walk.move();
+   
+    SDL_FillRect( screen, &screen->clip_rect, SDL_MapRGB( screen->format, 0xFF, 0xFF, 0xFF ) );
+	
+	for(int i = 0; i < LEVEL_ROW; ++i) {
         for(int j = 0; j < LEVEL_COL; ++j) {
             Tile tile = lvl->get_tile(j, i);
             if(tile == GROUND) {
@@ -175,23 +584,20 @@ int main( int argc, char* args[] ) {
         }
         printf("\n");
     }
-    
-    SDL_Flip( screen);
-    
-    //While the user hasn't quit
-    while( quit == false )
-    {
-        //While there's events to handle
-        while( SDL_PollEvent( &event ) )
+	
+	 walk.show();
+	  if( SDL_Flip( screen ) == -1 )
         {
-            //If the user has Xed out the window
-            if( event.type == SDL_QUIT )
-            {
-                //Quit the program
-                quit = true;
-            }
+            return 1;
         }
-    }
+
+        //Cap the frame rate
+        if( fps.get_ticks() < 1000 / FRAMES_PER_SECOND )
+        {
+            SDL_Delay( ( 1000 / FRAMES_PER_SECOND ) - fps.get_ticks() );
+        }
+	}
+	
     
     //Free the images and quit SDL
     clean_up();
