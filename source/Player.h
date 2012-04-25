@@ -1,28 +1,34 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include <string>
+#include "Score.h"
+
+using namespace std;
+
 class Player {
-  
-    int cur_x;
-    int cur_y;
     
     //Game specific stuff
-    int score;
-    int max_bombs;
-    int blast_pow;
     
 public:
     Player();
-    
-    virtual ~Player() {
-    }
+    int cur_x;
+    int cur_y;
+    string name;
+    int alive;
+    int score;
+    Score myScore;
+    int bombTimer;
+    int max_bombs;
+    int blast_pow;
+   // virtual ~Player() {
+  //  }
     
     int getX();
     int getY();
     
-    virtual void update() {
-        
-    }
+   // virtual void update() {   
+   // }
     
 };
 

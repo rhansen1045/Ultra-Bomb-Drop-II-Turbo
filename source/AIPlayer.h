@@ -1,5 +1,5 @@
-#ifndef LOCALPLAYER_H
-#define LOCALPLAYER_H
+#ifndef AIPLAYER_H
+#define AIPLAYER_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,11 +12,16 @@
 #include "Player.h"
 #include "Level.h"
 
-class LocalPlayer : public Player {
+using namespace std;
+
+class AIPlayer : public Player {
 public:
-    LocalPlayer();
+
+	AIPlayer();
 	void randStart(int size);
-    void update(int x);
+	int randMove();
+	void update(int x);
+	void resetTimer();
 };
 
 #endif

@@ -1,11 +1,13 @@
-#include "player.h"
+#include "Player.h"
 
 Player::Player() {
-    cur_x = cur_y = 0;
+    cur_x = 0;
+    cur_y = 0;
     
     score = 0;
     max_bombs = 0;
     blast_pow = 0;
+    alive = 1;
 }
 
 int Player::getX() {

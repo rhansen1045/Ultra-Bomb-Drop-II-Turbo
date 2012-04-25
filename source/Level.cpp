@@ -1,5 +1,3 @@
-//Testing git upload, Cory Wolfe
-
 #include "Level.h"
 #include <stdlib.h>
 #include <time.h>
@@ -25,7 +23,7 @@ void Level::generate() {
                     board_data[j][LEVEL_ROW-1] = SOLID;
                 } else {
                     //
-                    if((j%2) != 0) { 
+                    if((j%2) != 0) {
                         board_data[j][i] = GROUND;
                     } else if((i % 2) == 0) {
                         board_data[j][i] = SOLID;
@@ -55,14 +53,30 @@ void Level::add_player(Player* player) {
     players.push_back(player);
 }
 
-void Level::set_local(LocalPlayer* player) {
-    local = player;
+//void Level::set_local(LocalPlayer* player) {
+//    local = player;
+//}
+
+void Level::update(int x, int y, Tile t) { //This should be in the main game loop with SDL
+    //Go through all objects and call update
+	board_data[x][y] = t;
 }
 
-void Level::update() { //This should be in the main game loop with SDL
-    //Go through all objects and call update
+void Level::printBoard(){
+	for(int x=0; x<LEVEL_ROW; x++){
+		for(int y=0; y<LEVEL_COL; y++){
+			Tile t = get_tile(y, x);
+			if(t == GROUND)
+				printf(" ");
+			else if(t == SOLID)
+				printf("I");
+			else if(t == BREAK)
+				printf("B");
+		}
+		printf("\n");
+	}
 }
 
 Tile Level::get_tile(int x, int y) {
-    return board_data[y][x];
+    return board_data[x][y];
 }

@@ -2,6 +2,7 @@
 #define LEVEL_H
 
 #include "LocalPlayer.h"
+#include "AIPlayer.h"
 
 #include <vector>
 
@@ -15,7 +16,10 @@ using namespace std;
 typedef enum {
     GROUND,
     SOLID,
-    BREAK
+    BREAK,
+    AI,
+    LOCAL,
+    BOMB
 } Tile;
 
 class Level {
@@ -23,20 +27,21 @@ class Level {
     Tile board_data[LEVEL_ROW][LEVEL_COL];
     
     
-    LocalPlayer* local;
+   // LocalPlayer* local;
     vector<Player*> players;
     
 public:
     Level(); //Constructor to generate a random level
     
     void add_player(Player* player);
-    void set_local(LocalPlayer* player);
+  //  void set_local(LocalPlayer* player);
     
     void generate(); //Generates a random level
     
     Tile get_tile(int x, int y);
+    void printBoard();
     
-    void update();
+    void update(int x, int y, Tile t);
 };
 
 #endif
