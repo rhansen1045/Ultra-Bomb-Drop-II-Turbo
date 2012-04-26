@@ -18,6 +18,7 @@ void Game::setLocalName(string s){
 	p1.name = s;
 }
 
+//place all 3 AIs and user player in random locations at start of the game
 void Game::randAIStart(int n){
 	int c = 0;
 	c1.randStart(n);
@@ -54,6 +55,20 @@ void Game::randAIStart(int n){
 	updateScores(0);
 }
 
+//if bomb is present in this position (x,y,) then return 1
+//else return 0
+int Game::checkforBombs(int x, int y){
+	for(int z=0; z<bombs.size(); z++){
+		if(bombs[z].loc_x == x && bombs[z].loc_y == y)
+			return 1;
+	}
+	return 0;
+}
+
+
+// *********actual game function *****************
+// **********loops continuously until there is only one player left alive
+//********************************
 void Game::singlePlayer(){
 	int ch;
 	string move;
@@ -61,9 +76,9 @@ void Game::singlePlayer(){
 	int turns = 0;	//after 30 turns, give all players one more bomb
 	while(true){
 		printBoard();
-		bombDec();
+		bombDec();			//decrease all bombs timers by 1
 		if(p1.alive == 1){
-		cout << "Move: ";
+		cout << "Move: ";		//input for user move
 		cin >> move;
 		while(move != "1" && move != "2" && move != "3" && move != "4" && move != "5"){
 			cout << "Invalid Move - Choose 1 for up, 2 for down, 3 for right, 4 for left, 5 for drop bomb" << endl;
@@ -71,55 +86,63 @@ void Game::singlePlayer(){
 			cin >> move;
 		}
 		istringstream( move ) >> pmove;
-		if(pmove == 5 && p1.max_bombs > 0){
+		if(pmove == 5 && p1.max_bombs > 0 && checkforBombs(p1.cur_x, p1.cur_y) == 0){		//set bomb if user's move = 5
 			setBomb(p1.name, p1.blast_pow, p1.cur_x, p1.cur_y);
 			p1.max_bombs--;
 		}
 		else if(checkMove(p1,pmove) == 1){
-			p1.update(pmove);
+			p1.update(pmove);			//update player's position
 		} }
-		else{
-		ch = cin.get();  //getch();
+
+		else{			//if user is dead, press enter to continue game
+		ch = cin.get();
 		printf("%c :\n", ch, int(ch));
 		}
+
+		//get moves from AI players
 		int x;
 		int c = checkMove(c1,1) + checkMove(c1,2) + checkMove(c1,3) + checkMove(c1,4);
-		if(c1.alive == 1 && c !=0){
+		if(c1.alive == 1 && c !=0){		//c = 0, AI can't move (is blocked)
+		//Random move for AI player 1
 		x = c1.randMove();
 		while(checkMove(c1, x) == 0){
 			x = c1.randMove();
 		}
-		c1.update(x);
-		if(c1.max_bombs > 0 && x == 1){
+		c1.update(x);		//update 1st AI position
+		c1.latestMove = x;
+		if(c1.max_bombs > 0 && x == 1 && checkforBombs(c1.cur_x, c1.cur_y) == 0){
 			setBomb(c1.name, c1.blast_pow, c1.cur_x, c1.cur_y);
 			c1.max_bombs--;}}
 
+
 		c = checkMove(c2,1) + checkMove(c2,2) + checkMove(c2,3) + checkMove(c2,4);
 		if(c2.alive == 1 && c != 0){
+		//Random move for AI player 2
 		x = c2.randMove();
 		while(checkMove(c2, x) == 0){
 			x = c2.randMove();}
-		c2.update(x);
-		if(c2.max_bombs > 0 && x == 1){
+		c2.update(x);		//update 2nd AI position
+		c2.latestMove = x;
+		if(c2.max_bombs > 0 && x == 1 && checkforBombs(c2.cur_x, c2.cur_y) == 0){
 			setBomb(c2.name, c2.blast_pow, c2.cur_x, c2.cur_y);
 			c2.max_bombs--;}}
 
+
 		c = checkMove(c3,1) + checkMove(c3,2) + checkMove(c3,3) + checkMove(c3,4);
 		if(c3.alive == 1 && c != 0){
-		x = c3.randMove();
+		x = c3.randMove();			//Random AI 3 move
 		while(checkMove(c3, x) == 0){
 			x = c3.randMove();}
-		c3.update(x);
-		if(c3.max_bombs > 0 && x == 1){
+		c3.update(x);			//update 3rd AI player's position
+		c3.latestMove = x;
+		if(c3.max_bombs > 0 && x == 1 && checkforBombs(c3.cur_x, c3.cur_y) == 0){
 			setBomb(c3.name, c3.blast_pow, c3.cur_x, c3.cur_y);
 			c3.max_bombs--;}}
-		//printBoard();
-		//bombDec();
 		turns++;
 		if((turns % 3) == 0)
-			updateScores(1);
-		if(turns == 30){
-			c1.max_bombs++;
+			updateScores(1);		//add 1 to score of all players who are alive
+		if(turns == 30){		//give all players extra bomb after 30 turns
+			c1.max_bombs++;	//avoids infinite game
 			c2.max_bombs++;
 			c3.max_bombs++;
 			turns = 0;
@@ -128,6 +151,7 @@ void Game::singlePlayer(){
 }
 
 
+//check if move is valid for LocalPlayer
 int Game::checkMove(LocalPlayer c, int move){
 	if(move == 1){		//CHECK MOVE UP
 	//can't move through other players
@@ -137,7 +161,7 @@ int Game::checkMove(LocalPlayer c, int move){
 			return 0;
 		else if(gameBoard.get_tile(c.cur_x-1, c.cur_y) == BREAK)	//cant move through breakable blocks
 			return 0;
-		else if(gameBoard.get_tile(c.cur_x-1, c.cur_y) == BOMB)
+		else if(checkforBombs(c.cur_x-1, c.cur_y) == 1)
 			return 0;
 		else if(c.cur_x-1 < 0)		//stay in boundaries
 			return 0;
@@ -153,7 +177,7 @@ int Game::checkMove(LocalPlayer c, int move){
 			return 0;
 		else if(gameBoard.get_tile(c.cur_x+1, c.cur_y) == BREAK)
 			return 0;
-		else if(gameBoard.get_tile(c.cur_x+1, c.cur_y) == BOMB)
+		else if(checkforBombs(c.cur_x+1, c.cur_y) == 1)
 			return 0;
 		else if(c.cur_x+1 > 10)		//stay in boundaries
 			return 0;
@@ -168,7 +192,7 @@ int Game::checkMove(LocalPlayer c, int move){
 			return 0;
 		else if(gameBoard.get_tile(c.cur_x, c.cur_y+1) == BREAK)
 			return 0;
-		else if(gameBoard.get_tile(c.cur_x, c.cur_y+1) == BOMB)
+		else if(checkforBombs(c.cur_x, c.cur_y+1) == 1)
 			return 0;
 		else if(c.cur_y+1 > 10)		//stay in boundaries
 			return 0;		
@@ -183,7 +207,7 @@ int Game::checkMove(LocalPlayer c, int move){
 			return 0;
 		else if(gameBoard.get_tile(c.cur_x, c.cur_y-1) == BREAK)	//can't move through breakable blocks
 			return 0;
-		else if(gameBoard.get_tile(c.cur_x, c.cur_y-1) == BOMB)		//can't travel through bombs
+		else if(checkforBombs(c.cur_x, c.cur_y-1) == 1)		//can't travel through bombs
 			return 0;
 		else if(c.cur_y -1 < 0)			//stay in boundaries
 			return 0;
@@ -192,6 +216,7 @@ int Game::checkMove(LocalPlayer c, int move){
 	}
 }
 
+//check if move is valid for AIPlayer
 int Game::checkMove(AIPlayer c, int move){	//1=up,2=down,3=right,4=left
 	if(move == 1){		//CHECK MOVE UP
 		if(c.name == "c1")		//can't move through other players
@@ -209,7 +234,7 @@ int Game::checkMove(AIPlayer c, int move){	//1=up,2=down,3=right,4=left
 			return 0;
 		else if(gameBoard.get_tile(c.cur_x-1, c.cur_y) == BREAK)	//cant move through breakable blocks
 			return 0;
-		else if(gameBoard.get_tile(c.cur_x-1, c.cur_y) == BOMB)
+		else if(checkforBombs(c.cur_x-1, c.cur_y) == 1)
 			return 0;
 		else if(c.cur_x-1 < 0)		//stay in boundaries
 			return 0;
@@ -233,7 +258,7 @@ int Game::checkMove(AIPlayer c, int move){	//1=up,2=down,3=right,4=left
 			return 0;
 		else if(gameBoard.get_tile(c.cur_x+1, c.cur_y) == BREAK)
 			return 0;
-		else if(gameBoard.get_tile(c.cur_x+1, c.cur_y) == BOMB)
+		else if(checkforBombs(c.cur_x+1, c.cur_y) == 1)
 			return 0;
 		else if(c.cur_x+1 > 10)		//stay in boundaries
 			return 0;
@@ -256,7 +281,7 @@ int Game::checkMove(AIPlayer c, int move){	//1=up,2=down,3=right,4=left
 			return 0;
 		else if(gameBoard.get_tile(c.cur_x, c.cur_y+1) == BREAK)
 			return 0;
-		else if(gameBoard.get_tile(c.cur_x, c.cur_y+1) == BOMB)
+		else if(checkforBombs(c.cur_x, c.cur_y+1) == 1)
 			return 0;
 		else if(c.cur_y+1 > 10)		//stay in boundaries
 			return 0;		
@@ -279,7 +304,7 @@ int Game::checkMove(AIPlayer c, int move){	//1=up,2=down,3=right,4=left
 			return 0;
 		else if(gameBoard.get_tile(c.cur_x, c.cur_y-1) == BREAK)	//can't move through breakable blocks
 			return 0;
-		else if(gameBoard.get_tile(c.cur_x, c.cur_y-1) == BOMB)		//can't travel through bombs
+		else if(checkforBombs(c.cur_x, c.cur_y-1) == 1)		//can't travel through bombs
 			return 0;
 		else if(c.cur_y -1 < 0)			//stay in boundaries
 			return 0;
@@ -295,7 +320,7 @@ void Game::printBoard(){
 	for(int x=0; x<LEVEL_ROW; x++){
 		for(int y=0; y<LEVEL_COL; y++){
 			Tile t = gameBoard.get_tile(x, y);
-			if(t == BOMB)
+			if(checkforBombs(x,y) == 1)
 				printf("O");
 			else if(c1.cur_x == x && c1.cur_y == y && c1.alive == 1)
 				printf("1");
@@ -321,7 +346,12 @@ void Game::printBoard(){
 	cout << "c3 = " << c3.myScore.getScore() << endl << endl;
 }
 
+//requires error checking in calling function to ensure:
+//1) player still has bombs left
+//2) another bomb is not in same location
+//calling function must also decrement maxbombs
 void Game::setBomb(string n, int r, int x, int y){
+	
 	Bomb tempB;
 	tempB.killer_name = n;
 	tempB.radius = r;
@@ -329,7 +359,7 @@ void Game::setBomb(string n, int r, int x, int y){
 	tempB.loc_x = x;
 	tempB.loc_y = y;
 	bombs.push_back(tempB);
-	gameBoard.update(x, y, BOMB);
+	//gameBoard.update(x, y, BOMB);
 }
 
 void Game::bombDec(){
@@ -338,7 +368,7 @@ void Game::bombDec(){
 	while(x < bombs.size()) {
 		bombs[x].timer = bombs[x].timer -1;
 		if(bombs[x].timer == 0){
-			gameBoard.update(bombs[x].loc_x, bombs[x].loc_y, GROUND);
+			//gameBoard.update(bombs[x].loc_x, bombs[x].loc_y, GROUND);
 			blowUp(bombs[x]);
 			bombs.erase(bombs.begin()+x);
 		}
@@ -479,8 +509,14 @@ void Game::blowUp(Bomb b){
 	t = gameBoard.get_tile(x,y);
 }
 
+//used to update the scores of all players based
+//on who's alive and the time
+//
+//if n == 1, all players alive receive score += 1
+//else, updateScores awards points to players for being the last, last 2, or last 3
+//players left alive in the game
 void Game::updateScores(int n){
-	if(n == 1) {		// n==1 means just regular timely update on scores
+	if(n == 1) {
 		if(c1.alive == 1)
 			c1.myScore.score_inc(1);
 		if(c2.alive == 1)
@@ -491,8 +527,8 @@ void Game::updateScores(int n){
 			p1.myScore.score_inc(1);
 	}
 	else{
-	int total = c1.alive + c2.alive + c3.alive + p1.alive;
-	if(total == 1){
+	int total = c1.alive + c2.alive + c3.alive + p1.alive;	//determine how many are alive
+	if(total == 1){		//determine which player was the last one alive
 		if(c1.alive == 1){
 			c1.myScore.score_lastAlive();
 			printBoard();
@@ -526,7 +562,7 @@ void Game::updateScores(int n){
 			exit(1);
 		}
 	}
-	if(total == 2){
+	if(total == 2){		//2 players are left alive
 		if(c1.alive == 1 && c2.alive == 1){
 			c1.myScore.score_2Alive();
 			c2.myScore.score_2Alive();
@@ -552,7 +588,7 @@ void Game::updateScores(int n){
 			c3.myScore.score_2Alive();
 		}
 	}
-	if(total == 3){
+	if(total == 3){		//3 players are left alive
 		if(p1.alive == 0){
 			c1.myScore.score_3Alive();
 			c2.myScore.score_3Alive();
@@ -574,6 +610,26 @@ void Game::updateScores(int n){
 		}
 	} }
 }
+
+
+
+//needs to be filled out to display proper AI animation
+void Game::displayAI(AIPlayer ai){
+	if(ai.latestMove == 1){
+		//DISPLAY AI PLAYER MOVING UP
+	}
+	else if(ai.latestMove == 2){
+		//DISPLAY AI PLAYER MOVING DOWN
+	}
+	else if(ai.latestMove == 3){
+		//DISPLAY AI PLAYER MOVING RIGHT
+	}
+	else {
+		//DISPLAY AI PLAYER MOVING LEFT
+	}
+}
+
+
 
 void Game::saveScores(){
 	Highscore h1;

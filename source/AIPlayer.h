@@ -16,6 +16,8 @@ using namespace std;
 
 class AIPlayer : public Player {
 public:
+	int latestMove;	//value to determine proper graphic to use
+				//1=up, 2=down, 3=right, 4=left
 
 	AIPlayer();
 	void randStart(int size);

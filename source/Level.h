@@ -16,10 +16,7 @@ using namespace std;
 typedef enum {
     GROUND,
     SOLID,
-    BREAK,
-    AI,
-    LOCAL,
-    BOMB
+    BREAK
 } Tile;
 
 class Level {

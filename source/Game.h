@@ -42,12 +42,15 @@ public:
 	int checkMove(LocalPlayer c, int move);
 	void setBomb(string n, int r, int x, int y);
 	void bombDec();
+	int checkforBombs(int x, int y);
 	void blowUp(Bomb b);
 	void setBombRadius(int x);
 	void updateScores(int n);
 	void winner(AIPlayer c);
 	void saveScores();
 	void kill(string n, string victim);
+	void displayAI(AIPlayer ai);
+	
 };
 
 #endif
